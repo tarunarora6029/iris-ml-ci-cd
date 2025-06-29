@@ -23,7 +23,9 @@ jobs:
 
       - name: 📦 Install dependencies
         run: |
-          pip install -r requirements.txt
+          python -m pip install --upgrade pip
+          pip install --prefer-binary --default-timeout=100 -r requirements.txt
+
 
       - name: 🧠 Train model
         run: python src/train.py
