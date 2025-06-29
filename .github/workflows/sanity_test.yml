@@ -1,0 +1,59 @@
+name: CI Iris ML
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: ⬇️ Checkout code
+        uses: actions/checkout@v3
+
+      - name: 🐍 Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: 📦 Install dependencies
+        run: |
+          pip install -r requirements.txt
+
+      - name: 🧠 Train model
+        run: python src/train.py
+
+      - name: 🧪 Run unit tests
+        run: pytest
+
+      - name: 🎨 Check formatting with Black
+        run: black --check .
+
+      - name: 🧼 Run Flake8 linting
+        run: flake8 .
+
+      - name: 📊 Generate confusion matrix
+        run: python src/plot_metrics.py
+
+      - name: 🗃️ Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: iris-artifacts
+          path: |
+            model/model.joblib
+            metrics.png
+            report.md
+
+      - name: 💬 Set up CML
+        uses: iterative/setup-cml@v2
+
+      - name: 💬 Comment on PR with report
+        env:
+          REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cml comment create report.md
