@@ -1,0 +1,64 @@
+name: CI Iris ML
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: ⬇️ Checkout code
+        uses: actions/checkout@v3
+
+      - name: 🐍 Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: 📦 Install dependencies
+        run: |
+          python -m venv .venv
+          source .venv/bin/activate
+          pip install --upgrade pip
+          pip install --prefer-binary --no-cache-dir -r requirements.txt
+
+      - name: 🧠 Train model
+        run: |
+          source .venv/bin/activate
+          python src/train.py
+
+      - name: 🧪 Run unit tests
+        run: |
+          source .venv/bin/activate
+          pytest
+
+      - name: 📊 Generate confusion matrix
+        run: |
+          source .venv/bin/activate
+          python src/plot_metrics.py
+
+      - name: 🗃️ Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: iris-artifacts
+          path: |
+            model/model.joblib
+            metrics.png
+            report.md
+
+      - name: 💬 Set up CML
+        uses: iterative/setup-cml@v2
+
+      - name: 💬 Comment on PR with report
+        env:
+          REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          source .venv/bin/activate
+          cml comment create report.md
+
